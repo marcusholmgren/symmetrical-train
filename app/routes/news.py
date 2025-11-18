@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query
 from typing import List, Optional
 from app.models import NewsClassification
+from app.services.search.search import SearchService
 from app.schemas import (
     NewsClassificationCreate,
     NewsClassificationUpdate,
@@ -68,6 +69,14 @@ async def delete_news_classification(news_id: int):
 
     await news.delete()
     return None
+
+
+@router.get("/search/", response_model=List[NewsClassificationResponse])
+async def search_news(q: str = Query(..., min_length=3)):
+    """Search for news articles."""
+    search_service = SearchService()
+    results = await search_service.search(q)
+    return results
 
 
 @router.get("/stats/summary")

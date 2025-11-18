@@ -8,6 +8,7 @@ If the Hugging Face dataset is not accessible, it will use sample data.
 import asyncio
 from app.models import NewsClassification
 from app.database import init_db, close_db
+from app.services.search.indexing import IndexingService
 
 
 # Sample data for fallback when Hugging Face is not accessible
@@ -152,6 +153,11 @@ async def seed_database():
     print("\nLabel distribution:")
     for label, count in sorted(label_counts.items()):
         print(f"  {label}: {count}")
+
+    print("\nStarting search index...")
+    indexing_service = IndexingService()
+    await indexing_service.reindex_all()
+    print("✓ Search index completed!")
     
     await close_db()
 
