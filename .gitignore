@@ -32,7 +32,11 @@ uv.lock
 
 # Database
 *.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
 *.db
+*.db-shm
+*.db-wal
 
 # IDE
 .vscode/
@@ -56,3 +60,4 @@ htmlcov/
 # Hugging Face cache
 .cache/
 datasets/
+
