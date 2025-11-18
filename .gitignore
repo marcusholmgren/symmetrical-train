@@ -28,7 +28,6 @@ env/
 
 # uv
 .uv/
-uv.lock
 
 # Database
 *.sqlite3
@@ -60,4 +59,5 @@ htmlcov/
 # Hugging Face cache
 .cache/
 datasets/
+
 
