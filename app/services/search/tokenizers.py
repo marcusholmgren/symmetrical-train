@@ -9,7 +9,7 @@ from unidecode import unidecode
 from dataclasses import dataclass
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class Token:
     """Represents a token with its value and weight."""
 

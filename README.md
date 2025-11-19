@@ -43,6 +43,10 @@ This will download the `argilla/synthetic-text-classification-news` dataset and 
 Start the FastAPI server:
 
 ```bash
+uv run fastapi run dev
+```
+
+```bash
 uv run python main.py
 ```
 

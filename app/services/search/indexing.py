@@ -23,7 +23,7 @@ class IndexingService:
 
     async def index_document(self, document: NewsClassification):
         """Index a single document."""
-        await self._remove_document_index(document.id)
+        await self.remove_document_from_index(document.id)
 
         entries_to_create = []
         field_weight = 10  # Weight for the 'review' field
@@ -52,9 +52,10 @@ class IndexingService:
         if entries_to_create:
             await IndexEntry.bulk_create(entries_to_create)
 
-    async def _remove_document_index(self, document_id: int):
+    async def remove_document_from_index(self, document_id: int):
         """Remove all index entries for a given document."""
         await IndexEntry.filter(document_id=document_id).delete()
+
 
     async def reindex_all(self):
         """Re-index all documents in the database."""
@@ -63,3 +64,8 @@ class IndexingService:
         documents = await NewsClassification.all()
         for document in documents:
             await self.index_document(document)
+
+
+class DefaultIndexingService(IndexingService):
+    def __init__(self):
+        super().__init__()

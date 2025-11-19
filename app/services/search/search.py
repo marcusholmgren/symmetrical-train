@@ -86,3 +86,7 @@ class SearchService:
         for tokenizer in self.tokenizers:
             tokens.extend(tokenizer.tokenize(query))
         return tokens
+
+class DefaultSearchService(SearchService):
+    def __init__(self):
+        super().__init__()
