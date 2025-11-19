@@ -10,12 +10,10 @@ class IndexToken(Model):
     """Stores unique tokens with their tokenizer weights."""
 
     id = fields.IntField(pk=True)
-    name = fields.CharField(max_length=255, index=True)
-    weight = fields.IntField()
+    name = fields.CharField(max_length=255, unique=True)
 
     class Meta:
         table = "index_tokens"
-        unique_together = ("name", "weight")
 
     def __str__(self):
         return self.name

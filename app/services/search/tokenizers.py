@@ -8,6 +8,9 @@ from typing import List
 from unidecode import unidecode
 from dataclasses import dataclass
 
+COMPILED_RE_TOKEN_NORMALIZATION_A = re.compile(r"[^a-z0-9]")
+COMPILED_RE_TOKEN_NORMALIZATION_B = re.compile(r"\s+")
+
 
 @dataclass(frozen=True, slots=True)
 class Token:
@@ -36,8 +39,8 @@ class Tokenizer(ABC):
         """Normalize text by lowercasing, removing special characters, and handling whitespace."""
         text = unidecode(text)
         text = text.lower()
-        text = re.sub(r"[^a-z0-9]", " ", text)
-        text = re.sub(r"\s+", " ", text)
+        text = COMPILED_RE_TOKEN_NORMALIZATION_A.sub(" ", text)
+        text = COMPILED_RE_TOKEN_NORMALIZATION_B.sub(" ", text)
         return text.strip()
 
     def _extract_words(self, text: str) -> List[str]:
