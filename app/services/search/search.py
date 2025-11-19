@@ -3,9 +3,8 @@ Service for searching documents.
 """
 
 from typing import List
-from tortoise.expressions import Q
-from tortoise.functions import Sum, Count, Avg, Coalesce
-from app.models import IndexEntry, IndexToken, NewsClassification
+from tortoise.functions import Sum, Count, Avg
+from app.models import IndexEntry, NewsClassification
 from app.services.search.tokenizers import (
     Tokenizer,
     WordTokenizer,
@@ -86,6 +85,7 @@ class SearchService:
         for tokenizer in self.tokenizers:
             tokens.extend(tokenizer.tokenize(query))
         return tokens
+
 
 class DefaultSearchService(SearchService):
     def __init__(self):

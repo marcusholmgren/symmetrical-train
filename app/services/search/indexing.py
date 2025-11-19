@@ -5,7 +5,12 @@ Service for indexing documents for the search engine.
 import math
 from typing import List
 from app.models import NewsClassification, IndexToken, IndexEntry
-from app.services.search.tokenizers import Tokenizer, WordTokenizer, PrefixTokenizer, NGramTokenizer
+from app.services.search.tokenizers import (
+    Tokenizer,
+    WordTokenizer,
+    PrefixTokenizer,
+    NGramTokenizer,
+)
 
 
 class IndexingService:
@@ -35,13 +40,10 @@ class IndexingService:
         existing_tokens = await IndexToken.filter(name__in=token_values)
         existing_token_map = {t.name: t for t in existing_tokens}
 
-        new_token_values = [
-            t for t in token_values if t not in existing_token_map
-        ]
+        new_token_values = [t for t in token_values if t not in existing_token_map]
         if new_token_values:
-            new_tokens = await IndexToken.bulk_create(
-                [IndexToken(name=v) for v in new_token_values]
-            )
+            await IndexToken.bulk_create([IndexToken(name=v) for v in new_token_values])
+            new_tokens = await IndexToken.filter(name__in=new_token_values)
             for t in new_tokens:
                 existing_token_map[t.name] = t
 
@@ -50,9 +52,7 @@ class IndexingService:
             if token_obj is None:
                 continue
             final_weight = (
-                field_weight
-                * token.weight
-                * math.ceil(math.sqrt(len(token.value)))
+                field_weight * token.weight * math.ceil(math.sqrt(len(token.value)))
             )
             entries_to_create.append(
                 IndexEntry(
@@ -74,12 +74,11 @@ class IndexingService:
         """Remove all index entries for a given document."""
         await IndexEntry.filter(document_id=document_id).delete()
 
-
     async def reindex_all(self):
         """Re-index all documents in the database."""
         await IndexToken.all().delete()
         await IndexEntry.all().delete()
-        async for document in NewsClassification.all().iterator():
+        async for document in NewsClassification.all():
             await self.index_document(document)
 
 

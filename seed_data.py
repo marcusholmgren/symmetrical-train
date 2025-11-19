@@ -96,14 +96,17 @@ async def seed_database():
 
     print("Loading dataset...")
     dataset = None
-    
+
     try:
         # Try to load from Hugging Face
         from datasets import load_dataset
+
         print("Attempting to load from Hugging Face...")
-        dataset = load_dataset("argilla/synthetic-text-classification-news", split="train")
+        dataset = load_dataset(
+            "argilla/synthetic-text-classification-news", split="train"
+        )
         print(f"Loaded {len(dataset)} records from Hugging Face dataset.")
-        
+
         # Insert data into database
         print("Inserting data into database...")
         batch_size = 100
@@ -135,7 +138,7 @@ async def seed_database():
     except Exception as e:
         print(f"Could not load from Hugging Face: {e}")
         print("Using sample data instead...")
-        
+
         # Use sample data
         for idx, data in enumerate(SAMPLE_DATA):
             await NewsClassification.create(**data)
@@ -143,13 +146,13 @@ async def seed_database():
 
     total_count = await NewsClassification.all().count()
     print(f"\n✓ Successfully seeded database with {total_count} records!")
-    
+
     # Show label distribution
     labels = await NewsClassification.all().values_list("label", flat=True)
     label_counts = {}
     for label in labels:
         label_counts[label] = label_counts.get(label, 0) + 1
-    
+
     print("\nLabel distribution:")
     for label, count in sorted(label_counts.items()):
         print(f"  {label}: {count}")
@@ -158,7 +161,7 @@ async def seed_database():
     indexing_service = IndexingService()
     await indexing_service.reindex_all()
     print("✓ Search index completed!")
-    
+
     await close_db()
 
 

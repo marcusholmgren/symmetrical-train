@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
-from typing import List, Optional, Annotated, Any
+from typing import List, Optional, Annotated
 
 from app.models import NewsClassification
 from app.services.search.indexing import IndexingService, DefaultIndexingService
@@ -17,9 +17,9 @@ NewsIndexingService = Annotated[IndexingService, Depends(DefaultIndexingService)
 
 @router.get("/", response_model=List[NewsClassificationResponse])
 async def list_news_classifications(
-        skip: int = Query(0, ge=0),
-        limit: int = Query(100, ge=1, le=1000),
-        label: Optional[str] = None,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=1000),
+    label: Optional[str] = None,
 ):
     """
     List all news classifications with optional filtering and pagination.
@@ -47,8 +47,8 @@ async def get_news_classification(news_id: int):
 
 @router.post("/", response_model=NewsClassificationResponse, status_code=201)
 async def create_news_classification(
-        data: NewsClassificationCreate,
-        indexing_service: NewsIndexingService,
+    data: NewsClassificationCreate,
+    indexing_service: NewsIndexingService,
 ):
     """Create a new news classification."""
     news = await NewsClassification.create(review=data.review, label=data.label)
@@ -58,9 +58,9 @@ async def create_news_classification(
 
 @router.put("/{news_id}", response_model=NewsClassificationResponse)
 async def update_news_classification(
-        news_id: int,
-        data: NewsClassificationUpdate,
-        indexing_service: NewsIndexingService,
+    news_id: int,
+    data: NewsClassificationUpdate,
+    indexing_service: NewsIndexingService,
 ):
     """Update an existing news classification."""
     news = await NewsClassification.get_or_none(id=news_id)
@@ -75,8 +75,8 @@ async def update_news_classification(
 
 @router.delete("/{news_id}", status_code=204)
 async def delete_news_classification(
-        news_id: int,
-        indexing_service: NewsIndexingService,
+    news_id: int,
+    indexing_service: NewsIndexingService,
 ):
     """Delete a news classification."""
     news = await NewsClassification.get_or_none(id=news_id)
@@ -90,8 +90,8 @@ async def delete_news_classification(
 
 @router.get("/search/", response_model=List[NewsClassificationResponse])
 async def search_news(
-        q: Annotated[str, Query(..., min_length=3)],
-        search_service: NewsSearchService,
+    q: Annotated[str, Query(..., min_length=3)],
+    search_service: NewsSearchService,
 ):
     """Search for news articles."""
     results = await search_service.search(q)

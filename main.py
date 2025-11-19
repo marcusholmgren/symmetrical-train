@@ -3,10 +3,13 @@ FastAPI application for text classification news management.
 Uses Tortoise ORM with SQLite database and Hugging Face dataset for seed data.
 """
 
+import logging
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from app.database import init_db, close_db
 from app.routes.news import router as news_router
+
+logging.basicConfig(level=logging.INFO)
 
 
 @asynccontextmanager
@@ -50,4 +53,4 @@ async def health():
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True, log_level="debug")
