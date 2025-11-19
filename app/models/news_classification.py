@@ -11,6 +11,7 @@ class NewsClassification(Model):
     id = fields.IntField(primary_key=True)
     review = fields.TextField()
     label = fields.CharField(max_length=255)
+    token_count = fields.IntField(default=0)
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
 

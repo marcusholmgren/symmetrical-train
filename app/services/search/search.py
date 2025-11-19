@@ -3,9 +3,8 @@ Service for searching documents.
 """
 
 from typing import List
-from tortoise.expressions import Q
-from tortoise.functions import Sum, Count, Avg, Coalesce
-from app.models import IndexEntry, IndexToken, NewsClassification
+from tortoise.functions import Sum, Count, Avg
+from app.models import IndexEntry, NewsClassification
 from app.services.search.tokenizers import (
     Tokenizer,
     WordTokenizer,
@@ -48,27 +47,27 @@ class SearchService:
             )
         )
 
-        doc_token_counts = (
-            await IndexEntry.all()
-            .group_by("document_id")
-            .annotate(token_count=Count("id"))
-            .values("document_id", "token_count")
-        )
-        doc_token_map = {item["document_id"]: item["token_count"] for item in doc_token_counts}
-
         results = await base_query.values(
             "document_id", "base_score", "token_diversity", "avg_weight"
         )
 
+        doc_ids = [r["document_id"] for r in results]
+        documents = await NewsClassification.filter(id__in=doc_ids).values(
+            "id", "token_count"
+        )
+        doc_token_map = {doc["id"]: doc["token_count"] for doc in documents}
+
         scored_results = []
         for r in results:
             doc_token_count = doc_token_map.get(r["document_id"], 1)
+            if doc_token_count == 0:
+                doc_token_count = 1
+
             score = (
                 r["base_score"]
-                * (1 + (0 if r["token_diversity"] is None else r["token_diversity"]))
-                * (1 + (0 if r["avg_weight"] is None else r["avg_weight"]))
-                / (1 + doc_token_count)
-            )
+                * (1 + r.get("token_diversity", 0))
+                * (1 + r.get("avg_weight", 0))
+            ) / doc_token_count
             scored_results.append({"document_id": r["document_id"], "score": score})
 
         sorted_results = sorted(scored_results, key=lambda x: x["score"], reverse=True)
@@ -86,6 +85,7 @@ class SearchService:
         for tokenizer in self.tokenizers:
             tokens.extend(tokenizer.tokenize(query))
         return tokens
+
 
 class DefaultSearchService(SearchService):
     def __init__(self):
