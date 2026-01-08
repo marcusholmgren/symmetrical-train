@@ -100,12 +100,14 @@ async def seed_database():
     try:
         # Try to load from Hugging Face
         from datasets import load_dataset
-
-        print("Attempting to load from Hugging Face...")
-        dataset = load_dataset(
+        if True:
+            print("Attempting to load from Hugging Face...")
+            dataset = load_dataset(
             "argilla/synthetic-text-classification-news", split="train"
-        )
-        print(f"Loaded {len(dataset)} records from Hugging Face dataset.")
+            )
+            print(f"Loaded {len(dataset)} records from Hugging Face dataset.")
+        else:
+            dataset = SAMPLE_DATA
 
         # Insert data into database
         print("Inserting data into database...")
@@ -116,7 +118,7 @@ async def seed_database():
             # The dataset has 'text' and 'label' columns
             # We'll map 'text' to 'review' in our model
             record_data = {
-                "review": item.get("text", ""),
+                "review": item.get("text", item.get("review", "")),
                 "label": item.get("label", ""),
             }
             records_to_create.append(record_data)

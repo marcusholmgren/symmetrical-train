@@ -31,7 +31,7 @@ async def list_news_classifications(
     query = NewsClassification.all()
 
     if label:
-        query = query.filter(label=label)
+        query = query.filter(label__iexact=label)
 
     return await query.offset(skip).limit(limit)
 

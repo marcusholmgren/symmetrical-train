@@ -1,5 +1,5 @@
 """
-Service for searching documents.
+Service for searching documents using a multi-tokenization inverted index strategy.
 """
 
 from typing import List
@@ -14,6 +14,27 @@ from app.services.search.tokenizers import (
 
 
 class SearchService:
+    """
+    SearchService implements a weighted search algorithm over an inverted index.
+
+    Strategy Overview:
+    - **Multi-Tokenization**: Uses a combination of Word, Prefix, and N-Gram tokenizers to 
+      balance precision and recall. This allows for exact matches, partial prefix matches, 
+      and fuzzy-like matching via n-grams.
+    - **Aggregated Scoring**: Leverages database-side aggregations (Sum, Count, Avg) to 
+      calculate relevance metrics efficiently.
+    - **Length Normalization**: Scores are normalized by the document's total token count 
+      to prevent long documents from unfairly dominating results (a common issue in 
+      simple frequency-based ranking).
+
+    Remark:
+    The implementation follows an inverted index retrieval pattern. It performs a 
+    set-based lookup of query tokens, then applies a custom scoring heuristic:
+    Score = (Σ weights * (1 + unique_token_count) * (1 + avg_weight)) / document_length
+    This formula rewards both term frequency (via Sum) and term diversity (via Count), 
+    while the average weight acts as a quality signal for the matches found.
+    """
+
     def __init__(self, tokenizers: List[Tokenizer] = None):
         if tokenizers is None:
             self.tokenizers = [
@@ -25,6 +46,15 @@ class SearchService:
             self.tokenizers = tokenizers
 
     async def search(self, query: str, limit: int = 10) -> List[NewsClassification]:
+        """
+        Executes a search query against the index.
+
+        1. Tokenizes the input query using all configured tokenizers.
+        2. Retrieves matching IndexEntry records, grouping by document.
+        3. Calculates base metrics: total weight, token diversity, and average weight.
+        4. Normalizes scores by document length and sorts by relevance.
+        5. Fetches and returns the full NewsClassification objects for the top results.
+        """
         query_tokens = self._tokenize_query(query)
         if not query_tokens:
             return []
