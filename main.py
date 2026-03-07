@@ -6,7 +6,8 @@ Uses Tortoise ORM with SQLite database and Hugging Face dataset for seed data.
 import logging
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
-from app.database import init_db, close_db
+from tortoise.contrib.fastapi import register_tortoise
+from app.database import TORTOISE_ORM
 from app.routes.news import router as news_router
 
 logging.basicConfig(level=logging.INFO)
@@ -15,11 +16,7 @@ logging.basicConfig(level=logging.INFO)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Handle startup and shutdown events."""
-    # Startup
-    await init_db()
     yield
-    # Shutdown
-    await close_db()
 
 
 # Create FastAPI application
@@ -32,6 +29,13 @@ app = FastAPI(
 
 # Include routers
 app.include_router(news_router)
+
+register_tortoise(
+    app,
+    config=TORTOISE_ORM,
+    generate_schemas=True,
+    add_exception_handlers=True,
+)
 
 
 @app.get("/")
