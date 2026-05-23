@@ -60,4 +60,6 @@ htmlcov/
 .cache/
 datasets/
 
+.antigravitycli
+
 

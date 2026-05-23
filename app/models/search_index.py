@@ -9,7 +9,7 @@ from tortoise import fields
 class IndexToken(Model):
     """Stores unique tokens with their tokenizer weights."""
 
-    id = fields.IntField(pk=True)
+    id = fields.IntField(primary_key=True)
     name = fields.CharField(max_length=255, unique=True)
 
     class Meta:
@@ -22,9 +22,9 @@ class IndexToken(Model):
 class IndexEntry(Model):
     """Links tokens to documents with field-specific weights."""
 
-    id = fields.IntField(pk=True)
+    id = fields.IntField(primary_key=True)
     token = fields.ForeignKeyField("models.IndexToken", related_name="entries")
-    document_id = fields.IntField(index=True)
+    document_id = fields.IntField(db_index=True)
     document_type = fields.CharField(max_length=50)
     field_id = fields.CharField(max_length=50)
     weight = fields.IntField()

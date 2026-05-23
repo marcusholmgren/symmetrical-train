@@ -42,6 +42,9 @@ TORTOISE_ORM = {
 async def init_db():
     """Initialize database connection"""
     await Tortoise.init(config=TORTOISE_ORM)
+    # Enable Write-Ahead Logging (WAL) and set a 5-second busy timeout for sqlite robustness
+    connection = Tortoise.get_connection("default")
+    await connection.execute_script("PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;")
     await Tortoise.generate_schemas()
 
 

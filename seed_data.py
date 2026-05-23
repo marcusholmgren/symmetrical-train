@@ -114,12 +114,25 @@ async def seed_database():
         batch_size = 100
         records_to_create = []
 
+        # Determine if we can map integer labels to string class names
+        has_class_labels = (
+            hasattr(dataset, "features")
+            and "label" in dataset.features
+            and hasattr(dataset.features["label"], "int2str")
+        )
+
         for idx, item in enumerate(dataset):
             # The dataset has 'text' and 'label' columns
             # We'll map 'text' to 'review' in our model
+            raw_label = item.get("label", "")
+            if has_class_labels and isinstance(raw_label, int):
+                label_str = dataset.features["label"].int2str(raw_label).upper()
+            else:
+                label_str = str(raw_label).upper() if raw_label is not None else ""
+
             record_data = {
                 "review": item.get("text", item.get("review", "")),
-                "label": item.get("label", ""),
+                "label": label_str,
             }
             records_to_create.append(record_data)
 

@@ -24,15 +24,7 @@ class SearchService:
     - **Aggregated Scoring**: Leverages database-side aggregations (Sum, Count, Avg) to 
       calculate relevance metrics efficiently.
     - **Length Normalization**: Scores are normalized by the document's total token count 
-      to prevent long documents from unfairly dominating results (a common issue in 
-      simple frequency-based ranking).
-
-    Remark:
-    The implementation follows an inverted index retrieval pattern. It performs a 
-    set-based lookup of query tokens, then applies a custom scoring heuristic:
-    Score = (Σ weights * (1 + unique_token_count) * (1 + avg_weight)) / document_length
-    This formula rewards both term frequency (via Sum) and term diversity (via Count), 
-    while the average weight acts as a quality signal for the matches found.
+      to prevent long documents from unfairly dominating results.
     """
 
     def __init__(self, tokenizers: List[Tokenizer] = None):
@@ -49,12 +41,22 @@ class SearchService:
         """
         Executes a search query against the index.
 
-        1. Tokenizes the input query using all configured tokenizers.
-        2. Retrieves matching IndexEntry records, grouping by document.
-        3. Calculates base metrics: total weight, token diversity, and average weight.
-        4. Normalizes scores by document length and sorts by relevance.
-        5. Fetches and returns the full NewsClassification objects for the top results.
+        1. Validates the input query and limits.
+        2. Tokenizes the input query using all configured tokenizers.
+        3. Retrieves matching IndexEntry records, grouping by document.
+        4. Calculates base metrics: total weight, token diversity, and average weight.
+        5. Normalizes scores by document length and sorts by relevance.
+        6. Fetches and returns the full NewsClassification objects for the top results.
         """
+        # Input validation for query
+        if not query or not isinstance(query, str) or not query.strip():
+            return []
+
+        # Validate limit
+        if limit <= 0:
+            return []
+        limit = min(limit, 1000)
+
         query_tokens = self._tokenize_query(query)
         if not query_tokens:
             return []
@@ -64,6 +66,7 @@ class SearchService:
             key=len,
             reverse=True,
         )
+        # Cap queried tokens to prevent SQL performance degradation
         if len(token_values) > 300:
             token_values = token_values[:300]
 
@@ -81,6 +84,9 @@ class SearchService:
             "document_id", "base_score", "token_diversity", "avg_weight"
         )
 
+        if not results:
+            return []
+
         doc_ids = [r["document_id"] for r in results]
         documents = await NewsClassification.filter(id__in=doc_ids).values(
             "id", "token_count"
@@ -90,9 +96,10 @@ class SearchService:
         scored_results = []
         for r in results:
             doc_token_count = doc_token_map.get(r["document_id"], 1)
-            if doc_token_count == 0:
+            if doc_token_count <= 0:
                 doc_token_count = 1
 
+            # Combined score reward diversity, total matched weight, and average token weight
             score = (
                 r["base_score"]
                 * (1 + r.get("token_diversity", 0))
@@ -101,14 +108,14 @@ class SearchService:
             scored_results.append({"document_id": r["document_id"], "score": score})
 
         sorted_results = sorted(scored_results, key=lambda x: x["score"], reverse=True)
-        doc_ids = [result["document_id"] for result in sorted_results[:limit]]
+        top_doc_ids = [result["document_id"] for result in sorted_results[:limit]]
 
-        if not doc_ids:
+        if not top_doc_ids:
             return []
 
-        documents = await NewsClassification.filter(id__in=doc_ids)
+        documents = await NewsClassification.filter(id__in=top_doc_ids)
         doc_map = {doc.id: doc for doc in documents}
-        return [doc_map[doc_id] for doc_id in doc_ids if doc_id in doc_map]
+        return [doc_map[doc_id] for doc_id in top_doc_ids if doc_id in doc_map]
 
     def _tokenize_query(self, query: str) -> List:
         tokens = []

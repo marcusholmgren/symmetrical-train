@@ -4,6 +4,7 @@ Service for indexing documents for the search engine.
 
 import math
 from typing import List
+from tortoise.exceptions import IntegrityError
 from app.models import NewsClassification, IndexToken, IndexEntry
 from app.services.search.tokenizers import (
     Tokenizer,
@@ -42,17 +43,30 @@ class IndexingService:
 
         new_token_values = [t for t in token_values if t not in existing_token_map]
         if new_token_values:
-            await IndexToken.bulk_create([IndexToken(name=v) for v in new_token_values])
-            new_tokens = await IndexToken.filter(name__in=new_token_values)
-            for t in new_tokens:
-                existing_token_map[t.name] = t
+            try:
+                await IndexToken.bulk_create([IndexToken(name=v) for v in new_token_values])
+            except IntegrityError:
+                # Concurrent request might have inserted some of these tokens.
+                # Fall back to safe individual get_or_create to avoid unique constraint crashes.
+                for v in new_token_values:
+                    await IndexToken.get_or_create(name=v)
+            
+            # Re-fetch all to ensure existing_token_map is complete and has accurate IDs
+            all_tokens_objs = await IndexToken.filter(name__in=token_values)
+            existing_token_map = {t.name: t for t in all_tokens_objs}
 
+        # Group tokens by value and keep the one with the maximum weight
+        unique_tokens = {}
         for token in all_tokens:
-            token_obj = existing_token_map.get(token.value)
+            if token.value not in unique_tokens or token.weight > unique_tokens[token.value].weight:
+                unique_tokens[token.value] = token
+
+        for token_value, token in unique_tokens.items():
+            token_obj = existing_token_map.get(token_value)
             if token_obj is None:
                 continue
             final_weight = (
-                field_weight * token.weight * math.ceil(math.sqrt(len(token.value)))
+                field_weight * token.weight * math.ceil(math.sqrt(len(token_value)))
             )
             entries_to_create.append(
                 IndexEntry(
